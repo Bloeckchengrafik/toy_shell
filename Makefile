@@ -1,14 +1,14 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -O2 -lm
+CFLAGS = -O2 -lm
 SRC_DIR = src
 BUILD_DIR = build
-TARGET = $(BUILD_DIR)/main
+TARGET = $(BUILD_DIR)/toysh
 
 SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 
 run: all
-	./build/main
+	./build/toysh
 
 all: $(TARGET)
 

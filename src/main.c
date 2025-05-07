@@ -13,7 +13,7 @@
 
 #define CMDCHARS 512
 
-void handle_SIGINT(int signal) {
+void handle_SIGINT(int _signal) {
     printf("\n\n\033[90m[To quit, type \033[97mexit\033[90m twice]\033[97m\n\n");
 }
 
@@ -23,7 +23,7 @@ void outputShell(char *cmdbuf) {
     cwd[0] = '?';
     cwd[1] = 0;
   }
-  printf("\033[97m\r%s $ ", cwd);
+  printf("\033[97m\r%s\033[90m $ \033[97m", cwd);
   token_t *tokens = tokenize(cmdbuf);
 
   for (token_t *token = tokens; token; token = token->next) {
