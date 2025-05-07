@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -O2
+CFLAGS = -Wall -Wextra -O2 -lm
 SRC_DIR = src
 BUILD_DIR = build
 TARGET = $(BUILD_DIR)/main
