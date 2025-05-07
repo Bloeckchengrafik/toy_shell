@@ -1,13 +1,21 @@
 #include "shell.h"
 #include "tokenizer.h"
+#include <signal.h>
 #include <math.h>
 #include <linux/limits.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+#define CMDCHARS 512
+
+void handle_SIGINT(int signal) {
+    printf("\n\n\033[90m[To quit, type \033[97mexit\033[90m twice]\033[97m\n\n");
+}
 
 void outputShell(char *cmdbuf) {
   char cwd[PATH_MAX];
@@ -47,10 +55,10 @@ void outputShell(char *cmdbuf) {
 }
 
 void readCmd(char *cmdbuf) {
-  memset(cmdbuf, 0, 512);
+  memset(cmdbuf, 0, CMDCHARS);
 
   int cmdIndex = 0;
-  for (cmdIndex = 0; cmdIndex < 512; cmdIndex++) {
+  for (cmdIndex = 0; cmdIndex < CMDCHARS; cmdIndex++) {
     outputShell(cmdbuf);
     char c = getCh();
     if (c == 27) {
@@ -86,20 +94,57 @@ int numPlaces (int n) {
 }
 
 int main() {
-  char *cmdbuf = calloc(512, sizeof(char));
+  char *cmdbuf = calloc(CMDCHARS, sizeof(char));
   struct winsize w;
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+  signal(SIGINT, handle_SIGINT);
 
+  bool last_was_exit = false;
   while (true) {
     readCmd(cmdbuf);
+    if (*cmdbuf == 0) {
+        printf("\n");
+        continue;
+    }
     token_t *tokens = tokenize(cmdbuf);
     char **command = tokens_to_command(tokens);
     bool is_continue = should_continue(tokens);
 
+    if (strcmp(*command, "exit") == 0) {
+        if (!last_was_exit) {
+            printf("\n\033[90m[To confirm, type \033[97mexit\033[90m again]\033[97m\n");
+            last_was_exit = true;
+        } else {
+            printf("\n\033[90m[Bye]\033[97m\n");
+            exit(0);
+        }
+        free_command(command);
+        free_tokens(tokens);
+        continue;
+    }
+
+    if (strcmp(*command, "cd") == 0) {
+        char *arg = *(command+1);
+        printf("\n");
+        if (arg == NULL) {
+            printf("\033[90mUsage: \033[97mcd [path]\033[97m\n");
+        } else {
+            if (chdir(arg) != 0) {
+                printf("\033[31mError\033[97m: No such file or directory\033[97m\n");
+            }
+        }
+
+        free_command(command);
+        free_tokens(tokens);
+        continue;
+    }
+
+    last_was_exit = false;
+
     pid_t pid = fork();
     if (pid == 0) {
       execvp(command[0], command);
-      perror("execvp");
+      perror("\033[31mError\033[97m");
       exit(1);
     } else if (pid > 0) {
       printf("\r\033[%dC\033[37mPID: \033[33m%d\033[97m\n", w.ws_col - numPlaces(pid) - 6, pid);
